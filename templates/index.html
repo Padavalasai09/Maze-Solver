@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Title</title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <style>
+        body {
+            background-color: rgb(52, 52, 52);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .maze_container {
+            display: flex;
+            flex-direction: column;
+            
+            padding: 10px;
+        }
+
+        .row {
+            display: flex;
+            width: 100%;
+            height: 30px;
+            margin-bottom: 5px;
+        }
+
+        .node {
+            background-color: rgb(243, 190, 190);
+            flex: 1;
+            border: 1px solid white;
+            box-sizing: border-box;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: transform .2s;
+        }
+        .node:hover{
+            -ms-transform: scale(1.1);
+            -webkit-transform: scale(1.1);
+            transform: scale(1.1);
+            
+        }
+
+        
+        .btn-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        h1{
+            color: aqua;
+        }
+    </style>
+</head>
+<body onload="setup()" class="bg-dark">
+
+    <div class="container">
+       <center> <h1 >Shortest Path</h1></center>
+        <div class="maze_container" id="maze_container">
+        </div>
+        <div class="btn-container">
+            <button class="btn btn-primary" onclick="setStart()">Set Start</button>
+            <button class="btn btn-success" onclick="setEnd()">Set End</button>
+            <button class="btn btn-danger" onclick="setClear()">Clear</button>
+            <button class="btn btn-danger" onclick="solve()">Solve</button>
+        </div>
+    </div>
+
+    <script>
+        var wall = 'rgb(255,255,255)';
+        var original = 'rgb(52,52,52)';
+        var startColor = 'rgb(0,255,0)';
+        var endColor = 'rgb(255,0,0)';   
+        
+        var startNode = null;
+        var endNode = null;
+
+        function setup() {
+            const maze_container = document.getElementById('maze_container');
+            const gridSize = 10;
+
+            for (let i = 0; i < gridSize; i++) {
+                var row = document.createElement('div');
+                row.className = 'row row' + (i + 1);
+                row.id = 'row' + (i + 1);
+                for (let j = 0; j < gridSize; j++) {
+                    const node = document.createElement('div');
+                    node.className = 'node node' + ((i * 10) + (j + 1));
+                    node.id = 'node' + ((i * 10) + (j + 1));
+                    if ((i * 10) + (j + 1) != startNode && (i * 10) + (j + 1) != endNode) {
+                        node.style.backgroundColor = original;
+                        node.onclick = function () {
+                            clicked(this.id)
+                        }
+                    }
+                    row.appendChild(node);
+                }
+                maze_container.append(row);
+            }
+        }
+
+        function clicked(elementID) {
+            var node = document.getElementById(elementID);
+            var currentColor = node.style.backgroundColor;
+
+            if (currentColor === wall || currentColor.replace(/\s/g, '') === wall) {
+                node.style.backgroundColor = original;
+            } else {
+                
+                if (startNode && endNode) {
+                    node.style.backgroundColor = wall;
+                } else if (!startNode) {
+                    node.style.backgroundColor = startColor;
+                    startNode = node;
+                    //alert(startNode.id);
+                } else {
+                    node.style.backgroundColor = endColor;
+                    endNode = node;
+                    //alert(endNode.id);
+                }
+            }
+        }
+
+        function setStart() {
+           
+            startNode.style.backgroundColor = startColor;
+            
+           
+        }
+        function setEnd() {
+           
+            endNode.style.backgroundColor = endColor;
+            
+        }
+
+        function setClear() {
+        const maze_container = document.getElementById('maze_container');
+        const gridSize = 10;
+
+        for (let i = 0; i < gridSize; i++) {
+            for (let j = 0; j < gridSize; j++) {
+                const node = document.getElementById('node' + ((i * 10) + (j + 1)));
+                node.style.backgroundColor = original;
+            }
+        }
+
+        startNode = null;
+        endNode = null;
+    }
+
+    function solve() {
+    
+    var wmatrix = [];
+    for (let i = 0; i < 10; i++) {
+        wmatrix[i] = new Array(10).fill(0);
+    }
+    var rowCount = 0;
+    var colCount = 0;
+    var nodeValue = 1;
+    for (let i = 1; i < 101; i++) {
+        
+        var nodeElement = document.getElementById('node' + i);
+        if (!nodeElement) {
+            continue;
+        }
+
+        var nodeColor = getComputedStyle(nodeElement).backgroundColor;
+        if (nodeColor.includes('255, 255, 255')) {
+            wmatrix[rowCount][colCount] = -1;
+        } else {
+            wmatrix[rowCount][colCount] = nodeValue;
+        }
+        colCount++;
+        if (colCount === 10) {
+            rowCount++;
+            colCount = 0;
+        }
+        nodeValue++;
+    }
+    //console.log(wmatrix);
+
+var adjacencyList = {};
+var possibleMoves = [
+    [-1, 0],
+    [1, 0],
+    [0, 1],
+    [0, -1],
+    [1,-1],
+    [1,1],
+    [-1,1],
+    [-1,-1]
+];
+
+for (var row = 0; row < 10; row++) {
+    for (var col = 0; col < 10; col++) {
+        if (wmatrix[row][col] === -1) {
+            continue;
+        }
+        var currNode = wmatrix[row][col];  
+        var neighbours = [];
+        for (var count = 0; count < 8; count++) {
+            var i = possibleMoves[count][0] + row;
+            var j = possibleMoves[count][1] + col;
+            if ((i >= 0 && i < 10) && (j >= 0 && j < 10)) {
+                if (wmatrix[i][j] !== -1) {
+
+                    neighbours.push(wmatrix[i][j]);
+                    
+                }
+            }
+        }
+        adjacencyList[currNode] = neighbours;
+        
+    }
+}
+//console.log(adjacencyList);
+let start=parseInt(startNode.id.slice(4),10);
+let end=parseInt(endNode.id.slice(4),10);
+//console.log("end node is"+end+" start node is"+start);
+bfsShortestPath(adjacencyList,start,end);
+//console.log("Shortest Path:", shortestPath);
+
+}
+async function bfsShortestPath(graph, source, destination) {
+    const visited = new Set();
+    const parent = {};  
+    const queue = [source];
+    let found = false;
+    //console.log(queue);
+    while (queue.length > 0) {
+        const currentNode = queue.shift();
+        visited.add(currentNode);
+        for (const neighbor of graph[currentNode]) {
+            if (!visited.has(neighbor)) {
+                queue.push(neighbor);
+                visited.add(neighbor);
+                parent[neighbor] = currentNode;
+
+                if (neighbor === destination) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (found) {
+            console.log("found");
+            break;
+        }
+    }
+    if (found===false){
+        alert("no path exists");
+    }
+    const path = [];
+    let node = destination;
+    while (parent[node] !== undefined) {
+        path.push(node);
+        node = parent[node];
+    }
+
+    path.push(source);
+    path.reverse();
+    console.log(path);
+    for(const ele of path){
+        const node = document.getElementById('node' + ele);
+        if('node'+ele!==startNode.id && 'node'+ele!==endNode.id){
+            await new Promise(resolve => setTimeout(resolve, 100));
+        node.style.backgroundColor ='orange' ;
+        }
+    }
+    return path;
+}
+
+
+
+
+
+
+    </script>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+            integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+            integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+            integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+            crossorigin="anonymous"></script>
+</body>
+</html>
